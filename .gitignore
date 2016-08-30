@@ -1,0 +1,14 @@
+/RUNNING_PID
+/logs/
+/project/*-shim.sbt
+/project/project/
+/project/target/
+/project/eclipse.sbt
+/target/
+/bin/
+
+/.cache-main
+/.cache-tests
+/.classpath
+/.project
+/.settings/
