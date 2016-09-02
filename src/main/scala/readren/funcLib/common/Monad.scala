@@ -1,12 +1,14 @@
 package readren.funcLib.common
 
+import scala.language.higherKinds
+import scala.language.implicitConversions
+
 import readren.funcLib;
-import funcLib.dataTypes.Transition
-import funcLib.dataTypes.Gen
 
 /**@param M a monadic type constructor */
 trait Monad[M[_]] extends Applicative[M] { self =>
-	def unit[A](a: => A): M[A]
+	def unit[A](a: A): M[A]
+	def lazyUnit[A](a: => A): M[A]
 	def flatMap[A, B](ma: M[A])(f: A => M[B]): M[B]
 
 	override def map[A, B](ma: M[A])(f: A => B): M[B] =
@@ -112,8 +114,10 @@ trait Monad[M[_]] extends Applicative[M] { self =>
 	// Ejercicio 12.11 (Nota: es del capitulo siguiente: 12- Applicative Functors): Try to write compose on Monad. It’s not possible, but it is instructive to attempt it and understand why this is the case.
 	def compose_notPossible[Q[_]](q: Monad[Q]) = new Monad[({ type R[x] = M[Q[x]] })#R] {
 		type R[x] = M[Q[x]]
-		def unit[A](a: => A): R[A] =
+		def unit[A](a: A): R[A] =
 			self.unit(q.unit(a))
+		def lazyUnit[A](a: => A): R[A] =
+			self.lazyUnit(q.lazyUnit(a))
 		def flatMap[A, B](ra: R[A])(f: A => R[B]): R[B] = {
 			def h(a: A): Q[B] = ???
 			def g(qa: Q[A]): M[Q[B]] = self.unit(q.flatMap(qa)(h))
@@ -130,8 +134,10 @@ trait Monad[M[_]] extends Applicative[M] { self =>
 	def composeM[N[_]](mn: Monad[N], tn: Traverzable[N]): Monad[({ type R[x] = M[N[x]] })#R] = { // no me salió. Tuve que mirar el resultado mas de una vez :(  Pero si me salió cuando ambos monads son traversables (en lugar de uno).
 		type R[X] = M[N[X]]
 		new Monad[R] {
-			def unit[A](a: => A): R[A] =
-				self.unit(mn.unit(a))
+			def unit[A](a: A): R[A] =
+				self.unit(mn.unit(a));
+			def lazyUnit[A](a: => A): R[A] =
+				self.lazyUnit(mn.lazyUnit(a))
 			def flatMap[A, B](ra: M[N[A]])(f: A => M[N[B]]): R[B] =
 				self.flatMap(ra)(na => self.map(tn.traverse(na)(f)(self))(mn.join))
 		}
@@ -141,8 +147,11 @@ trait Monad[M[_]] extends Applicative[M] { self =>
 	def composeM_masEsquisita[N[_]](mn: Monad[N], tn: Traverzable[N], tm: Traverzable[M]): Monad[({ type R[x] = M[N[x]] })#R] = {
 		type R[X] = M[N[X]]
 		new Monad[R] {
-			def unit[A](a: => A): R[A] = {
+			def unit[A](a: A): R[A] = {
 				self.unit(mn.unit(a))
+			}
+			def lazyUnit[A](a: => A): R[A] = {
+				self.lazyUnit(mn.lazyUnit(a))
 			}
 			def flatMap[A, B](ra: M[N[A]])(f: A => M[N[B]]): R[B] = {
 				self.flatMap[N[A], N[B]](ra) { (na: N[A]) => tn.sequence[M, B](mn.flatMap[A, M[B]](na) { (a: A) => tm.sequence[N, B](f(a))(mn) })(self) }
@@ -150,7 +159,7 @@ trait Monad[M[_]] extends Applicative[M] { self =>
 		}
 	}
 
-	// Agragado por mi para poder usar for-comprension sobre instancias de M[A] para las cuales existe un Monad[M]
+	// Agregado por mi para poder usar for-comprehension sobre instancias de M[A] para las cuales existe un Monad[M]
 	implicit def operators[A](ma: M[A]): MonadOps[A] = MonadOps(ma)
 	case class MonadOps[A](ma: M[A]) {
 		def map[B](f: A => B): M[B] = self.map(ma)(f)
@@ -160,49 +169,49 @@ trait Monad[M[_]] extends Applicative[M] { self =>
 
 object Monad {
 
-	val genMonad = new Monad[Gen] {
-		def unit[A](a: => A): Gen[A] = Gen.unit(a)
-		def flatMap[A, B](ma: Gen[A])(f: A => Gen[B]): Gen[B] =
-			ma flatMap f
-	}
+	import funcLib.dataTypes.Gen
+	val genMonad:Monad[Gen] = Gen
 
 	// Ejercicio 1: Write monad instances for Par, Parser, Option, Stream, and List
 	import funcLib.dataTypes.Par.Par;
 	val parMonad: Monad[Par] = new Monad[Par] {
 		import funcLib.dataTypes.Par;
-		override def unit[A](a: => A): Par[A] = Par.unit(a)
+		override def unit[A](a: A): Par[A] = Par.unit(a)
+		override def lazyUnit[A](a: => A): Par[A] = Par.async(a)
 		override def flatMap[A, B](ma: Par[A])(f: A => Par[B]): Par[B] = Par.flatMap(ma)(f)
 	};
 
 	import readren.funcLib.stringParsing.myImpl.MyParser;
 	val parserMonad: Monad[MyParser] = new Monad[MyParser] {
 		import funcLib.stringParsing.myImpl.MyParsers
-		override def unit[A](a: => A): MyParser[A] = MyParsers.succeed(a)
+		override def unit[A](a: A): MyParser[A] = MyParsers.succeed(a)
+		override def lazyUnit[A](a: => A): MyParser[A] = MyParsers.succeed(a)
 		override def flatMap[A, B](pa: MyParser[A])(f: A => MyParser[B]): MyParser[B] = MyParsers.flatMap(pa)(f)
 	}
-	
+
 	val optionMonad: Monad[Option] = new Monad[Option] {
-		override def unit[A](a: => A): Option[A] = Some(a)
+		override def unit[A](a: A): Option[A] = Some(a);
+		override def lazyUnit[A](a: => A): Option[A] = Some(a);
 		override def flatMap[A, B](oa: Option[A])(f: A => Option[B]): Option[B] = oa.flatMap(f)
 	}
 	val streamMonad: Monad[Stream] = new Monad[Stream] {
-		override def unit[A](a: => A): Stream[A] = Stream(a)
+		override def unit[A](a: A): Stream[A] = Stream(a)
+		override def lazyUnit[A](a: => A): Stream[A] = Stream(a)
 		override def flatMap[A, B](sa: Stream[A])(f: A => Stream[B]): Stream[B] = sa.flatMap(f)
-	}
+	};
+	
 	val listMonad: Monad[List] = new Monad[List] {
-		override def unit[A](a: => A): List[A] = List(a)
+		override def unit[A](a: A): List[A] = List(a)
+		override def lazyUnit[A](a: => A): List[A] = List(a)
 		override def flatMap[A, B](la: List[A])(f: A => List[B]): List[B] = la.flatMap(f)
 	}
 
 	// Ejercicio 2: Hard: State looks like it would be a monad too, but it takes two type arguments and you need a type constructor of one argument to implement Monad. Try to implement a State monad
-	def transitionMonad[S] = {
-		//      type Aux[A] = Transition[S, A]
-		new Monad[({ type M[A] = Transition[S, A] })#M] {
-			def unit[A](a: => A): Transition[S, A] = Transition.unit(a)
-			def flatMap[A, B](ma: Transition[S, A])(f: A => Transition[S, B]): Transition[S, B] = ma.flatMap(f)
-		}
-	}
+	import funcLib.dataTypes.StateAlgebra;
+	def transitionMonad[S]: Monad[StateAlgebra[S]#Transition] = 
+		(new StateAlgebra[S]).Transition
+	
 
-	// Agregado por mí para poder usar for-comprension sobre instancias de M[A] para las cuales existe un Monad[M]
+	// Agregado por mí para poder usar for-comprehension sobre instancias de M[A] para las cuales existe un Monad[M]
 	implicit def toMonadOps[A, M[_]](ma: M[A])(implicit monad: Monad[M]) = monad.MonadOps(ma)
 }

@@ -1,9 +1,13 @@
 package readren.funcLib.common
 
+import scala.language.higherKinds
+import scala.language.implicitConversions
+
 object MonadExt {
   
   implicit def toMonadExt[M[_]](monad: Monad[M]): MonadExt[M] = new MonadExt[M] {
-    def unit[A](a: => A): M[A] = monad.unit(a)
+    def unit[A](a: A): M[A] = monad.unit(a)
+    def lazyUnit[A](a: => A): M[A] = monad.lazyUnit(a)
     def flatMap[A, B](ma: M[A])(f: A => M[B]): M[B] = monad.flatMap(ma)(f)
   }
 

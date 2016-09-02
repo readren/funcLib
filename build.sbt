@@ -7,4 +7,4 @@ scalaVersion := "2.11.8"
 // Testing dependencies
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test"
 
-
+scalacOptions ++= Seq("-feature","-deprecation","-Ywarn-numeric-widen")

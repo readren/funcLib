@@ -17,7 +17,7 @@ object MyParsers extends Parsers[MyParser] {
 		p(input, offset).fold(x => Left(x.parseError), x => Right(x.value))
 	}
 
-	override def succeed[A](a: A): MyParser[A] = {
+	def succeed[A](a: A): MyParser[A] = {
 		(input: String, offset: Int) =>
 			Right(Match(a, offset))
 	}

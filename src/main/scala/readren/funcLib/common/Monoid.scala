@@ -1,5 +1,7 @@
 package readren.funcLib.common
 
+import scala.language.higherKinds
+
 import readren.funcLib.dataTypes.SGen
 import readren.funcLib.propCheck.Prop
 
@@ -62,7 +64,8 @@ object Monoid {
 
   //Ejercicio 4
   def monoidLaws[A](m: Monoid[A], gen: SGen[A]): Prop = {
-    Prop.forAll(gen ** gen ** gen) {
+  	import SGen.SGenOps
+    Prop.forAllProgresively(gen ** gen ** gen) {
       case ((g1, g2), g3) =>
         m.op(m.op(g1, g2), g3) == m.op(g1, m.op(g2, g3)) &&
           m.op(g1, m.zero) == m.op(m.zero, g1)

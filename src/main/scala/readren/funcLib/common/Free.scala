@@ -1,5 +1,7 @@
 package readren.funcLib.common
 
+import scala.language.higherKinds;
+
 import readren.funcLib;
 import funcLib.dataTypes.Par;
 import Par.Par;
@@ -23,7 +25,8 @@ object Free {
   def freeMonad[F[_]]: Monad[({ type f[x] = Free[F, x] })#f] = {
     type M[A] = ({ type f[X] = Free[F, X] })#f[A]
     new Monad[M] {
-      def unit[A](a: => A): M[A] = Free.unit(a)
+      def unit[A](a: A): M[A] = Free.unit(a)
+      def lazyUnit[A](a: => A): M[A] = Free.unit(a)
       def flatMap[A, B](ma: M[A])(f: A => M[B]): M[B] = ma.flatMap(f)
     }
   }

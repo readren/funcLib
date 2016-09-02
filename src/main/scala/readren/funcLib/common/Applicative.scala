@@ -1,9 +1,12 @@
 package readren.funcLib.common
 
+import scala.language.higherKinds;
+
 trait Applicative[P[_]] extends Functor[P] { self =>
 	// primitive combinators
 	def map2[A, B, C](fa: P[A], fb: P[B])(f: (A, B) => C): P[C]
-	def unit[A](a: => A): P[A]
+	def unit[A](a: A): P[A]
+	def lazyUnit[A](a: => A): P[A]
 
 	// derived combinators
 	def map[A, B](fa: P[A])(f: A => B): P[B] =
@@ -56,7 +59,11 @@ trait Applicative[P[_]] extends Functor[P] { self =>
 	def product[Q[_]](q: Applicative[Q]): Applicative[({ type R[x] = (P[x], Q[x]) })#R] = {
 		type R[x] = (P[x], Q[x])
 		new Applicative[R] {
-			override def unit[A](a: => A): R[A] = (self.unit(a), q.unit(a))
+			override def unit[A](a: A): R[A] = (self.unit(a), q.unit(a))
+			override def lazyUnit[A](a: => A): R[A] = {
+				lazy val la = a
+				(self.lazyUnit(la), q.lazyUnit(la))
+			}
 			override def map2[A, B, C](ra: R[A], rb: R[B])(f: (A, B) => C): R[C] = {
 				val x: P[C] = self.map2(ra._1, rb._1)(f)
 				val y: Q[C] = q.map2(ra._2, rb._2)(f)
@@ -68,8 +75,10 @@ trait Applicative[P[_]] extends Functor[P] { self =>
 	// Ejercicio 9: Hard: Applicative functors also compose another way! If F[_] and G[_] are applicative functors, then so is F[G[_]]. Implement this function:
 	def compose[Q[_]](q: Applicative[Q]) = new Applicative[({ type R[x] = P[Q[x]] })#R] {
 		type R[x] = P[Q[x]]
-		override def unit[A](a: => A): R[A] =
+		override def unit[A](a: A): R[A] =
 			self.unit(q.unit(a))
+		override def lazyUnit[A](a: => A): R[A] =
+			self.lazyUnit(q.lazyUnit(a))
 		override def map2[A, B, C](ra: R[A], rb: R[B])(f: (A, B) => C): R[C] = {
 			def g(qa: Q[A], qb: Q[B]): Q[C] = q.map2(qa, qb)(f)
 			self.map2(ra, rb) { g }
@@ -92,7 +101,9 @@ trait Applicative[P[_]] extends Functor[P] { self =>
 object Applicative {
 
 	val streamApplicative = new Applicative[Stream] {
-		def unit[A](a: => A): Stream[A] =
+		def unit[A](a: A): Stream[A] =
+			Stream.continually(a)
+		def lazyUnit[A](a: => A): Stream[A] =
 			Stream.continually(a)
 		def map2[A, B, C](a: Stream[A], b: Stream[B])(f: (A, B) => C): Stream[C] =
 			a zip b map f.tupled

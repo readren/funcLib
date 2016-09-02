@@ -1,6 +1,9 @@
 package readren.funcLib.common
 
-import readren.funcLib.dataTypes.{ Tree, Branch, Leaf }
+import scala.language.higherKinds
+
+import readren.funcLib.dataTypes.{ Branch, Leaf, Tree }
+
 /**
  * @author Gustavo
  */

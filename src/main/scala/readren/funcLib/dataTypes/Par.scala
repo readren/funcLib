@@ -26,8 +26,8 @@ object Par {
 
   // Agregada luego, mientras leía el capitulo 13 (Free monad) porque es necesaria para implementar `ch13_externalEffects.Free.IO[A](a: => A): IO[A]`
   /**
-   * Difiere de `unit` en que el parámetro será evaluado luego, cuando se llame a `Future#get()`. Se parece a `unit` en que ambos operan de forma sincrónica (el `Par` dado ignora al `ExecutionContext`). 
-   * Difiere de `async` en que el parámetro será evaluado sincrónicamente en el hilo en que se llame a `Future#get()`, en lugar de asincrónicamente en el hilo que determine el `ExecutionContext`. Se parece a `async` en que el parámetro es recibido por nombre (evaluado posteriormente).
+   * Difiere de `unit` en que el parámetro será evaluado luego, cuando se llame a Par.run. Se parece a `unit` en que ambos operan de forma sincrónica (el `Par` dado ignora al `ExecutionContext`). 
+   * Difiere de `async` en que el parámetro será evaluado sincrónicamente en el hilo en que se llame a Par.run, en lugar de asincrónicamente en el hilo que determine el `ExecutionContext`. Se parece a `async` en que el parámetro es recibido por nombre (evaluado posteriormente).
    */
   def delay[A](a: => A): Par[A] = {
     (es: ExecutorService) =>

@@ -9,7 +9,8 @@ case class Success[A](a: A) extends Validation[Nothing, A]
 
 object Validation {
 	def validationApplicative[E] = new Applicative[({ type f[x] = Validation[E, x] })#f] {
-		def unit[A](a: => A): Validation[E, A] = Success(a)
+		def unit[A](a: A): Validation[E, A] = Success(a)
+		def lazyUnit[A](a: => A): Validation[E, A] = Success(a)
 
 		def map2[A, B, C](va: Validation[E, A], vb: Validation[E, B])(f: (A, B) => C): Validation[E, C] =
 			va match {

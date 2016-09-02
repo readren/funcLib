@@ -1,5 +1,8 @@
 package readren.funcLib.stringParsing
 
+import scala.language.higherKinds;
+import scala.language.implicitConversions;
+import scala.language.postfixOps;
 import scala.Right
 import scala.util.matching.Regex
 
@@ -112,7 +115,9 @@ trait Parsers[Parser[+_]] { self =>
 	object Laws {
 		import readren.funcLib.propCheck.Prop
 		import readren.funcLib.dataTypes.Gen
-		import readren.funcLib.dataTypes.SGen
+		import readren.funcLib.dataTypes.SGen;
+		import Gen.GenOps;
+		import SGen.SGenOps;
 
 		private def equal[A](p1: Parser[A], p2: Parser[A])(in: Gen[String]): Prop =
 			Prop.forAll(in)(s => run(p1)(s) == run(p2)(s))
@@ -130,7 +135,7 @@ trait Parsers[Parser[+_]] { self =>
 				product(product(pa, pb), pc).map { case ((a, b), c) => (a, b, c) })(in)
 
 		def labelLaw[A](p: Parser[A], inputs: SGen[String]): Prop =
-			Prop.forAll(inputs ** SGen.string) {
+			Prop.forAllProgresively(inputs ** SGen.string) {
 				case (input, msg) =>
 					run(label(msg)(p))(input) match {
 						case Left(e) => e.top.message == msg

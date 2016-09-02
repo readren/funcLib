@@ -36,7 +36,7 @@ object Prop {
 			def loop(remainingCases: TestCases, rng1: Rng): Result = {
 				if (remainingCases == 0) Passed
 				else {
-					val (a, rng2) = ga.sample.run(rng1)
+					val (a, rng2) = ga(rng1)
 					Try(f(a)) match {
 						case Failure(e) =>
 							Falsified(buildMsg(a, e), testCases - remainingCases)
@@ -49,12 +49,9 @@ object Prop {
 			loop(testCases, rng0)
 		}
 
-	// copiado del libro
-	def forAll[A](g: SGen[A])(f: A => Boolean): Prop =
-		forAll(g.forSize(_))(f)
 
 	// copiado del libro
-	def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop = Prop {
+	def forAllProgresively[A](g: SGen[A])(f: A => Boolean): Prop = Prop {
 		(max, n, rng) =>
 			val casesPerSize = (n + (max - 1)) / max
 			val props: Stream[Prop] =
