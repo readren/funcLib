@@ -1,14 +1,15 @@
 package readren.funcLib.stringParsing.myImpl
 
+import scala.language.implicitConversions;
 import scala.Left
 import scala.Right
-import scala.util.matching.Regex
+import scala.util.matching.Regex;
 
 import readren.funcLib.stringParsing.Layer
 import readren.funcLib.stringParsing.ParseError
-import readren.funcLib.stringParsing.Parsers
+import readren.funcLib.stringParsing.ParserAlgebra
 
-object MyParsers extends Parsers[MyParser] {
+object MyParsers extends ParserAlgebra[MyParser] {
 
 	private def buildError(input: String, offset: Int, commited: Boolean, message: String) =
 		Left(Error(ParseError(List(Layer(offset, message, Nil))), commited))

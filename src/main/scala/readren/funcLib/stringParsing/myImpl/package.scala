@@ -1,4 +1,6 @@
-package readren.funcLib.stringParsing
+package readren.funcLib.stringParsing;
+
+import scala.language.implicitConversions;
 
 package object myImpl {
 

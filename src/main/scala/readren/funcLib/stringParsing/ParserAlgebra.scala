@@ -9,7 +9,7 @@ import scala.util.matching.Regex
 /**
  * @author Gustavo
  */
-trait Parsers[Parser[+_]] { self =>
+trait ParserAlgebra[Parser[+_]] { self =>
 	def run[A](p: Parser[A])(input: String, offset: Int = 0): Either[ParseError, A]
 
 	/**Always succeeds with the value `a` */

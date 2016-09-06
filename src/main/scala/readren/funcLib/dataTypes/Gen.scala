@@ -15,8 +15,8 @@ abstract class GenAlgebra[Gen[+_], S] extends Monad[Gen] { self =>
 
 	//////////// derived combinators ////////////
 
-	def choose(start: Int, stop: Int): Gen[Int] =
-		rngOp(rng => rng.choose(start, stop));
+	def uniform(start: Int, stop: Int): Gen[Int] =
+		rngOp(rng => rng.uniform(start, stop));
 
 	def uniform(begin: Double, end: Double): Gen[Double] =
 		rngOp(rng => rng.uniform(begin, end));
@@ -25,19 +25,19 @@ abstract class GenAlgebra[Gen[+_], S] extends Monad[Gen] { self =>
 		rngOp(rng => rng.exponential(alfa));
 
 	// traído desde ejer3a5
-	def boolean: Gen[Boolean] = choose(0, 2).map {
+	def boolean: Gen[Boolean] = uniform(0, 2).map {
 		case 0 => false
 		case 1 => true
 	}
 
 	def lowercaseChar: Gen[Int] =
-		choose('a', 'z')
+		uniform('a', 'z')
 	def uppercaseChar: Gen[Int] =
-		choose('A', 'Z')
+		uniform('A', 'Z')
 	def letterChar: Gen[Int] =
 		union(lowercaseChar, uppercaseChar)
 	def digitChar: Gen[Int] =
-		choose('0', '9')
+		uniform('0', '9')
 	def nonSpaceChar: Gen[Int] =
 		weighted2((letterChar, 7), (digitChar, 2))
 	def spaceChar: Gen[Int] =
@@ -54,7 +54,7 @@ abstract class GenAlgebra[Gen[+_], S] extends Monad[Gen] { self =>
 	def union_[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
 		boolean.flatMap { b => if (b) g1 else g2 };
 	def union[A](alternatives: Gen[A]*): Gen[A] = {
-		choose(0, alternatives.size).flatMap(x => alternatives(x))
+		uniform(0, alternatives.size).flatMap(x => alternatives(x))
 	}
 
 	// Ejercicio 8: a version of union that accepts a weight for each Gen and generates values from each Gen with probability proportional to its weight
@@ -65,7 +65,7 @@ abstract class GenAlgebra[Gen[+_], S] extends Monad[Gen] { self =>
 
 	// agregado por mi
 	def weightedN[A](alternatives: (Double, Gen[A])*): Gen[A] = {
-			rngOp { _.weighted(alternatives) } flatMap identity
+		rngOp { _.weighted(alternatives: _*) } flatMap identity
 		/* version anterior que usa `run` en lugar de `flatMap`
 		 rngOp { rng1 =>
 			val (ga, rng2) = rng1.weighted(alternatives)
@@ -75,8 +75,9 @@ abstract class GenAlgebra[Gen[+_], S] extends Monad[Gen] { self =>
 	};
 
 	// Hechos porque son útiles
-	def oneOf[A](alternatives: A*): Gen[A] =
-		choose(0, alternatives.size).map(x => alternatives(x));
+	def oneOf[A](alternatives: A*): Gen[A] = {
+		rngOp(rng => rng.oneOf(alternatives: _*))
+	}
 
 	def option[A](ga: Gen[A]): Gen[Option[A]] =
 		weighted2((unit(None), 0.1), (ga.map(Some(_)), 0.9));
@@ -97,8 +98,8 @@ abstract class GenAlgebra[Gen[+_], S] extends Monad[Gen] { self =>
 
 /**A partial implementation of `GenAlgebra` using `StateAlgebra[S]#Transition` as the `Gen` representation. */
 abstract class GenAlgebraImplWithTransition[S] extends GenAlgebra[StateAlgebra[S]#Transition, S] {
-	val sa: StateAlgebra[S] = new StateAlgebra;
-	import sa._
+	val stateAlgebra: StateAlgebra[S] = new StateAlgebra;
+	import stateAlgebra._
 
 	def run[A](ta: Transition[A])(s: S): (A, S) =
 		ta(s)
@@ -126,7 +127,6 @@ object Gen extends GenAlgebraImplWithTransition[Rng] {
 		def unsized: SGen[A] = _ => gen
 	}
 }
-
 
 object Borrame {
 	val x: Gen[Int] = Gen.unit(5)

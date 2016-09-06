@@ -17,7 +17,7 @@ abstract class SGenAlgebra[SGen[+_]] extends Monad[SGen] { self =>
 
 	//Ejercicio 11b. Nota: el `Gen` que da esta operación ignora el size recibido por `Gen.forSize`.
 	def choose(start: Int, stop: Int): SGen[Int] =
-		genOp(_ => Gen.choose(start, stop));
+		genOp(_ => Gen.uniform(start, stop));
 
 	//Ejercicio 11c. Nota: el `Gen` que da esta operación ignora el size recibido por `Gen.forSize`.
 	def choose(start: Double, stop: Double): SGen[Double] =

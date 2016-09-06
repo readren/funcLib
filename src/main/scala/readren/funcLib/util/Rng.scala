@@ -18,11 +18,16 @@ trait Rng {
 		(nl.toDouble / rl.toDouble, nextRng)
 	};
 
-	// Agregada por mi: es una variable aleatoria discreta con distribución constante en el intervalo [begin, end). La P(s==i) == 1/(end-begin)
-	def choose(begin: Int, end: Int): (Int, Rng) = {
+	// En el libro la llama `choose`: es una variable aleatoria discreta con distribución constante en el intervalo [begin, end). La P(s==i) == 1/(end-begin)
+	def uniform(begin: Int, end: Int): (Int, Rng) = {
 		val (a, rng2) = this.nextInt
 		((((a.toLong - Integer.MIN_VALUE.toLong) * (begin.toLong - end.toLong)) / (Integer.MAX_VALUE.toLong - Integer.MIN_VALUE.toLong + 1)).toInt + begin, rng2)
-	}
+	};
+
+	def oneOf[A](as: A*): (A, Rng) = {
+		val (i, rng2) = this.uniform(0, as.size)
+		(as(i), rng2)
+	};
 
 	// Agregada por mi: es una variable aleatoria con distribución uniforme en el intervalo [begin,end). La fdp es: fdp(x) = 1/(end-begin)
 	def uniform(begin: Double, end: Double): (Double, Rng) = {
@@ -54,7 +59,7 @@ trait Rng {
 	}
 
 	//Agregado por mi
-	def weighted[A](weights: Seq[(Double, A)]): (A, Rng) = {
+	def weighted[A](weights: (Double, A)*): (A, Rng) = {
 		val weightsIterator: Iterator[(Double, A)] = weights.iterator;
 		def loop(acumulator: Double): (Either[Double, A], Rng) = {
 			if (weightsIterator.hasNext) {
