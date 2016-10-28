@@ -14,7 +14,7 @@ abstract class GenAlgebra[Gen[+_], S] extends Monad[Gen] { self =>
 	def run[A](gen: Gen[A])(s: S): (A, S);
 
 	//////////// derived combinators ////////////
-
+	
 	def uniform(start: Int, stop: Int): Gen[Int] =
 		rngOp(rng => rng.uniform(start, stop));
 
@@ -117,20 +117,20 @@ abstract class GenAlgebraImplWithTransition[S] extends GenAlgebra[StateAlgebra[S
 
 ////////////////// Implementation ///////////////////////
 
-/** Note that `Gen` is an alias of `StateAlgebra[Rng]#Transition[A]` defined in the `dataTypes` package object  */
+/** Note that `GenT` is an alias of `StateAlgebra[Rng]#Transition[A]` defined in the `dataTypes` package object  */
 object Gen extends GenAlgebraImplWithTransition[Rng] {
-	def rngOp[A](op: Rng => (A, Rng)): Gen[A] =
+	def rngOp[A](op: Rng => (A, Rng)): GenDt[A] =
 		rng => op(rng);
 
-	implicit class OpsExt[A](gen: Gen[A]) {
+	implicit class OpsExt[A](gen: GenDt[A]) {
 		//Ejercicio 10: Implement helper functions for converting Gen to SGen. You can add this as a method on Gen
-		def unsized: SGen[A] = _ => gen
+		def unsized: SGenDt[A] = _ => gen
 	}
 }
 
 object Borrame {
-	val x: Gen[Int] = Gen.unit(5)
-	val y: Gen[List[Int]] = Gen.GenOps[Int](x).list(2)
+	val x: GenDt[Int] = Gen.unit(5)
+	val y: GenDt[List[Int]] = Gen.GenOps[Int](x).list(2)
 	import Gen.GenOps
-	val z: Gen[List[Int]] = x.list(2)
+	val z: GenDt[List[Int]] = x.list(2)
 }

@@ -160,8 +160,7 @@ trait Monad[M[_]] extends Applicative[M] { self =>
 	}
 
 	// Agregado por mi para poder usar for-comprehension sobre instancias de M[A] para las cuales existe un Monad[M]
-	implicit def operators[A](ma: M[A]): MonadOps[A] = MonadOps(ma)
-	case class MonadOps[A](ma: M[A]) {
+	implicit class MonadOps[A](ma: M[A]) {
 		def map[B](f: A => B): M[B] = self.map(ma)(f)
 		def flatMap[B](f: A => M[B]): M[B] = self.flatMap[A, B](ma)(f)
 	}
@@ -169,8 +168,9 @@ trait Monad[M[_]] extends Applicative[M] { self =>
 
 object Monad {
 
+	import funcLib.dataTypes.GenDt
 	import funcLib.dataTypes.Gen
-	val genMonad:Monad[Gen] = Gen
+	val genMonad:Monad[GenDt] = Gen
 
 	// Ejercicio 1: Write monad instances for Par, Parser, Option, Stream, and List
 	import funcLib.dataTypes.Par.Par;
@@ -181,13 +181,8 @@ object Monad {
 		override def flatMap[A, B](ma: Par[A])(f: A => Par[B]): Par[B] = Par.flatMap(ma)(f)
 	};
 
-	import readren.funcLib.stringParsing.myImpl.MyParser;
-	val parserMonad: Monad[MyParser] = new Monad[MyParser] {
-		import funcLib.stringParsing.myImpl.MyParsers
-		override def unit[A](a: A): MyParser[A] = MyParsers.succeed(a)
-		override def lazyUnit[A](a: => A): MyParser[A] = MyParsers.succeed(a)
-		override def flatMap[A, B](pa: MyParser[A])(f: A => MyParser[B]): MyParser[B] = MyParsers.flatMap(pa)(f)
-	}
+	import readren.funcLib.stringParsing.Parser;
+	val parserMonad: Monad[Parser] = funcLib.stringParsing.Parser
 
 	val optionMonad: Monad[Option] = new Monad[Option] {
 		override def unit[A](a: A): Option[A] = Some(a);

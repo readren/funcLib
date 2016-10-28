@@ -21,7 +21,7 @@ trait Rng {
 	// En el libro la llama `choose`: es una variable aleatoria discreta con distribución constante en el intervalo [begin, end). La P(s==i) == 1/(end-begin)
 	def uniform(begin: Int, end: Int): (Int, Rng) = {
 		val (a, rng2) = this.nextInt
-		((((a.toLong - Integer.MIN_VALUE.toLong) * (begin.toLong - end.toLong)) / (Integer.MAX_VALUE.toLong - Integer.MIN_VALUE.toLong + 1)).toInt + begin, rng2)
+		((((a.toLong - Integer.MIN_VALUE.toLong) * (end.toLong - begin.toLong)) / (Integer.MAX_VALUE.toLong - Integer.MIN_VALUE.toLong + 1)).toInt + begin, rng2)
 	};
 
 	def oneOf[A](as: A*): (A, Rng) = {
@@ -37,19 +37,20 @@ trait Rng {
 
 	/**
 	 * Agregada por mi: es una variable aleatoria con distribución exponencial en el intervalo [0,infinito) con el parámetro alfa igual al recibido. La fdp es: fdp(x) = alfa * Exp(-alfa * x)  para todo x > 0
-	 * Fundamento matemático: Estos son los pasos que hice en "Mathematica 5" para averiguar la función `H` que transforma una distribución uniforme en el intervalo [0,1) a una distribución exponencial en el intervalo [0, +infinito):
-	 * La fdp de la distribucion uniforme en intervalo [0,1) es f[x_] = 1
+	 * Fundamento matemático: Estos son los pasos que hice en "Mathematica 5" para averiguar la función `H` que transforma una distribución uniforme en el intervalo (0,1] a una distribución exponencial en el intervalo [0, +infinito):
+	 * La fdp de la distribución uniforme en intervalo (0,1] es f[x_] = 1    (Notar que se eligió el intervalo (0,1] en lugar de [0,1) para eludir la singularidad en cero que tiene la H que hallaremos luego)
 	 * La fdp de la distribución exponencial es: g[y_] = alfa * Exp[-alfa * y]
-	 * Según teorema 5.1 del libro de Meyer y suponiendo que H[x] es estrictamente decreciente:
-	 * 	G[y_] == P[Y <= y] == P[H[X] <= y] == P[X >= invH[y]] == 1 - P[X <= invH[y]] == 1 - F[invH[y]]  donde invH es la inversa de H
+	 * Según teorema 5.1 del libro de Meyer y suponiendo que y=H[x] es estrictamente decreciente:
+	 * 	G[y_] == P[Y <= y] == P[H[X] <= y] == P[X >= invH[y]] == 1 - P[X < invH[y]] == 1 - F[invH[y]]  donde invH es la inversa de H, y F y G las fdas correspondientes a f y g
 	 * Derivando ambos lados de la ecuación respecto de y:
-	 * 	g[y_] == 0 - f[invH[y]] * invH'[y] == -invH'[y]  para todo y tal que 0 <= invH[y] < 1
+	 * 	g[y_] == 0 - f[invH[y]] * invH'[y] == -invH'[y]  para todo y tal que 0 < invH[y] <= 1
 	 * Integrando toda la ecuación respecto a `y` tenemos:
-	 * 	Integral[g[y], y] == - Integral[invH'[y], y]  <=> Integral[alfa * Exp[-alfa * y] = - invH[y] <=> -Exp[-alfa*y] == -invH[y]
+	 * 	Integral[g[y], y] == - Integral[invH'[y], y]  <=> Integral[alfa * Exp[-alfa * y], y] == - invH[y] <=> -Exp[-alfa*y] == -invH[y]
 	 * Aplicando `H` sobre toda la ecuación tenemos:
 	 *  H[Exp[-alfa*y]] == y
-	 * Sustituyendo `Exp[-alfa*y]` con `x`
+	 * Sustituyendo `Exp[-alfa*y]` con `x`    
 	 *  H[x] == y[x] == -Log[x]/alfa
+	 * Pero el generador que tenemos da numeros en el intervalo [0,1) y el que pide este desarrollo debe generar numeros en el intervalo (0,1]. Afortunadamente el generador X requerido se puede fabricar con 1-U donde U tiene distribucion uniforme en [0,1).
 	 */
 	def exponential(alfa: Double): (Double, Rng) = {
 		assert(alfa > 0)

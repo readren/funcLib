@@ -1,12 +1,12 @@
 package readren.funcLib.propCheck
 
 import readren.funcLib.util.Rng
-import readren.funcLib.dataTypes.Gen
+import readren.funcLib.dataTypes.GenDt
 import scala.annotation.tailrec
 import scala.util.Try
 import scala.util.Failure
 import scala.util.Success
-import readren.funcLib.dataTypes.SGen
+import readren.funcLib.dataTypes.SGenDt
 
 case class Prop(run: (MaxSize, TestCases, Rng) => Result) {
 	//Ejercicio 9a
@@ -30,7 +30,7 @@ case class Prop(run: (MaxSize, TestCases, Rng) => Result) {
 
 object Prop {
 	// Versión echa por mi antes de ver la desarrollada en el libro. Me faltó el "Try" que lo agregué luego de ver la versión del libro.
-	def forAll[A](ga: Gen[A])(f: A => Boolean): Prop =
+	def forAll[A](ga: GenDt[A])(f: A => Boolean): Prop =
 		Prop { (maxSize, testCases, rng0) =>
 			@tailrec
 			def loop(remainingCases: TestCases, rng1: Rng): Result = {
@@ -51,7 +51,7 @@ object Prop {
 
 
 	// copiado del libro
-	def forAllProgresively[A](g: SGen[A])(f: A => Boolean): Prop = Prop {
+	def forAllProgresively[A](g: SGenDt[A])(f: A => Boolean): Prop = Prop {
 		(max, n, rng) =>
 			val casesPerSize = (n + (max - 1)) / max
 			val props: Stream[Prop] =
